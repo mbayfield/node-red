@@ -1,5 +1,5 @@
 /**
- * Copyright 2013, 2015 IBM Corp.
+ * Copyright 2013, 2016 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,6 +116,9 @@ RED.editor = (function() {
      */
     function validateNodeProperty(node,definition,property,value) {
         var valid = true;
+        if (/^\$\([a-zA-Z_][a-zA-Z0-9_]*\)$/.test(value)) {
+            return true;
+        }
         if ("required" in definition[property] && definition[property].required) {
             valid = value !== "";
         }
@@ -126,8 +129,8 @@ RED.editor = (function() {
             if (!value || value == "_ADD_") {
                 valid = definition[property].hasOwnProperty("required") && !definition[property].required;
             } else {
-                var v = RED.nodes.node(value).valid;
-                valid = (v==null || v);
+                var configNode = RED.nodes.node(value);
+                valid = (configNode !== null && (configNode.valid == null || configNode.valid));
             }
         }
         return valid;
@@ -951,19 +954,19 @@ RED.editor = (function() {
                                 RED.nodes.add(editing_config_node);
                             }
 
-                            updateConfigNodeSelect(configProperty,configType,editing_config_node.id);
-
-                            if (configTypeDef.credentials) {
-                                updateNodeCredentials(editing_config_node,configTypeDef.credentials,"node-config-input");
-                            }
                             if (configTypeDef.oneditsave) {
                                 configTypeDef.oneditsave.call(editing_config_node);
+                            }
+                            if (configTypeDef.credentials) {
+                                updateNodeCredentials(editing_config_node,configTypeDef.credentials,"node-config-input");
                             }
                             validateNode(editing_config_node);
                             for (var i=0;i<editing_config_node.users.length;i++) {
                                 var user = editing_config_node.users[i];
                                 validateNode(user);
                             }
+
+                            updateConfigNodeSelect(configProperty,configType,editing_config_node.id);
 
                             RED.nodes.dirty(true);
                             RED.view.redraw(true);

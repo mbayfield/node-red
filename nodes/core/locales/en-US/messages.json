@@ -137,8 +137,11 @@
     "template": {
         "label": {
             "template": "Template",
-            "property": "Property",
-            "format": "Syntax Highlight"
+            "property": "Set property",
+            "format": "Syntax Highlight",
+            "syntax": "Format",
+            "mustache": "Mustache template",
+            "plain": "Plain text"
         },
         "templatevalue": "This is the payload: {{payload}} !"
     },
@@ -146,9 +149,10 @@
         "action": "Action",
         "for": "For",
         "delaymsg": "Delay message",
-        "ramdomdelay": "Random delay",
+        "randomdelay": "Random delay",
         "limitrate": "Limit rate to",
         "fairqueue": "Topic based fair queue",
+        "timedqueue": "Timed release queue",
         "milisecs": "Miliseconds",
         "secs": "Seconds",
         "sec": "Second",
@@ -165,8 +169,9 @@
         "label": {
             "delay": "delay",
             "limit": "limit",
-            "random": "ramdom",
-            "queue": "queue"
+            "random": "random",
+            "queue": "queue",
+            "timed": "releases per"
         },
         "error": {
             "buffer": "buffer exceeded 1000 messages"
@@ -177,8 +182,9 @@
         "then": "then",
         "then-send": "then send",
         "output": {
-            "string": "the string payload",
-            "existing": "the existing message",
+            "string": "the string",
+            "number": "the number",
+            "existing": "the existing msg.payload",
             "nothing": "nothing"
         },
         "wait-reset": "wait to be reset",
@@ -189,11 +195,13 @@
             "m": "Minutes",
             "h": "Hours"
         },
-        "extend": "extend delay if new message arrives",
-        "tip": "The node can be reset by sending a message with the <b>msg.reset</b> property set",
+        "extend": " extend delay if new message arrives",
+        "tip": "The node can also be reset by sending a message with the <code>msg.reset</code> property set to any value.",
         "label": {
             "trigger": "trigger",
-            "trigger-block": "trigger & block"
+            "trigger-block": "trigger & block",
+            "reset": "and reset if msg.payload == ",
+            "resetprompt": "(optional reset value)"
         }
     },
     "comment": {
@@ -371,7 +379,8 @@
             "using": "using",
             "output": "Output",
             "group": "Group",
-            "interface": "Interface",
+            "interface": "Local IP",
+            "interfaceprompt": "(optional) local ip address to bind to",
             "send": "Send a",
             "toport": "to port",
             "address": "Address",
@@ -398,7 +407,7 @@
         },
         "tip": {
             "in": "Tip: Make sure your firewall will allow the data in.",
-            "out": "Tip: leave address and port blank if you want to set using <b>msg.ip</b> and <b>msg.port</b>.",
+            "out": "Tip: leave address and port blank if you want to set using <code>msg.ip</code> and <code>msg.port</code>.",
             "port": "Ports already in use: "
         },
         "status": {
@@ -569,6 +578,7 @@
             "readinitial": "Read initial state of pin on deploy/restart?",
             "type": "Type",
             "initpin": "Initialise pin state?",
+            "debounce": "Debounce",
             "button": "Button",
             "pimouse": "Pi Mouse",
             "pikeyboard": "Pi Keyboard",
@@ -629,7 +639,12 @@
     "tail": {
         "label": {
             "filename": "Filename",
+            "type": "File type",
             "splitlines": "Split lines on \\n?"
+        },
+        "action": {
+            "text": "Text - returns String",
+            "binary": "Binary - returns Buffer"
         },
         "errors": {
             "windowsnotsupport": "Not currently supported on Windows."
