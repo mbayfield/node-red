@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 IBM Corp.
+ * Copyright 2015, 2016 IBM Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ function load(defaultNodesDir,disableNodePathScan) {
     // We should expose that as an option at some point, although the
     // performance gains are minimal.
     //return loadNodeFiles(registry.getModuleList());
+    runtime.log.info(runtime.log._("server.loading"));
 
     var nodeFiles = localfilesystem.getNodeFiles(defaultNodesDir,disableNodePathScan);
     return loadNodeFiles(nodeFiles);
@@ -67,10 +68,14 @@ function createNodeApi(node) {
         nodes: {},
         log: {},
         settings: {},
+        events: runtime.events,
         util: runtime.util,
         version: runtime.version,
     }
-    copyObjectProperties(runtime.nodes,red.nodes,["createNode","getNode","eachNode","registerType","addCredentials","getCredentials","deleteCredentials" ]);
+    copyObjectProperties(runtime.nodes,red.nodes,["createNode","getNode","eachNode","addCredentials","getCredentials","deleteCredentials" ]);
+    red.nodes.registerType = function(type,constructor,opts) {
+        runtime.nodes.registerType(node.id,type,constructor,opts);
+    }
     copyObjectProperties(runtime.log,red.log,null,["init"]);
     copyObjectProperties(runtime.settings,red.settings,null,["init","load","reset"]);
     if (runtime.adminApi) {
@@ -82,10 +87,10 @@ function createNodeApi(node) {
         red.server = runtime.adminApi.server;
     } else {
         red.comms = {
-            publish: function(){}
+            publish: function() {}
         };
         red.library = {
-            register: function(){}
+            register: function() {}
         };
         red.auth = {
             needsPermission: function() {}
@@ -111,6 +116,7 @@ function loadNodeFiles(nodeFiles) {
             if (nodeFiles[module].redVersion &&
                 !semver.satisfies(runtime.version().replace("-git",""), nodeFiles[module].redVersion)) {
                 //TODO: log it
+                runtime.log.warn("["+module+"] "+runtime.log._("server.node-version-mismatch",{version:nodeFiles[module].redVersion}));
                 continue;
             }
             if (module == "node-red" || !registry.getModuleInfo(module)) {
@@ -183,7 +189,8 @@ function loadNodeConfig(fileInfo) {
             template: file.replace(/\.js$/,".html"),
             enabled: isEnabled,
             loaded:false,
-            version: version
+            version: version,
+            local: fileInfo.local
         };
         if (fileInfo.hasOwnProperty("types")) {
             node.types = fileInfo.types;
@@ -196,7 +203,7 @@ function loadNodeConfig(fileInfo) {
                     if (!node.types) {
                         node.types = [];
                     }
-                    node.err = "Error: "+file+" does not exist";
+                    node.err = "Error: "+node.template+" does not exist";
                 } else {
                     node.types = [];
                     node.err = err.toString();
@@ -208,7 +215,7 @@ function loadNodeConfig(fileInfo) {
                 var regExp = /<script ([^>]*)data-template-name=['"]([^'"]*)['"]/gi;
                 var match = null;
 
-                while((match = regExp.exec(content)) !== null) {
+                while ((match = regExp.exec(content)) !== null) {
                     types.push(match[2]);
                 }
                 node.types = types;
@@ -219,7 +226,7 @@ function loadNodeConfig(fileInfo) {
                 var mainContent = "";
                 var helpContent = {};
                 var index = 0;
-                while((match = regExp.exec(content)) !== null) {
+                while ((match = regExp.exec(content)) !== null) {
                     mainContent += content.substring(index,regExp.lastIndex-match[1].length);
                     index = regExp.lastIndex;
                     var help = content.substring(regExp.lastIndex-match[1].length,regExp.lastIndex);
@@ -375,7 +382,6 @@ function getNodeHelp(node,lang) {
         } else {
             node.help[lang] = node.help[runtime.i18n.defaultLang];
         }
-
     }
     return node.help[lang];
 }

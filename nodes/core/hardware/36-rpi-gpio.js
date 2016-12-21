@@ -23,17 +23,23 @@ module.exports = function(RED) {
     var gpioCommand = __dirname+'/nrgpio';
 
     try {
-        fs.statSync("/dev/ttyAMA0"); // unlikely if not on a Pi
+        var cpuinfo = fs.readFileSync("/proc/cpuinfo").toString();
+        if (cpuinfo.indexOf(": BCM") === -1) { throw "Info : "+RED._("rpi-gpio.errors.ignorenode"); }
     } catch(err) {
-        //RED.log.info(RED._("rpi-gpio.errors.ignorenode"));
         throw "Info : "+RED._("rpi-gpio.errors.ignorenode");
     }
 
     try {
-        fs.statSync("/usr/share/doc/python-rpi.gpio");
+        fs.statSync("/usr/share/doc/python-rpi.gpio"); // test on Raspbian
+        // /usr/lib/python2.7/dist-packages/RPi/GPIO
     } catch(err) {
-        RED.log.warn(RED._("rpi-gpio.errors.libnotfound"));
-        throw "Warning : "+RED._("rpi-gpio.errors.libnotfound");
+        try {
+            fs.statSync("/usr/lib/python2.7/site-packages/RPi/GPIO"); // test on Arch
+        }
+        catch(err) {
+            RED.log.warn(RED._("rpi-gpio.errors.libnotfound"));
+            throw "Warning : "+RED._("rpi-gpio.errors.libnotfound");
+        }
     }
 
     if ( !(1 & parseInt((fs.statSync(gpioCommand).mode & parseInt("777", 8)).toString(8)[0]) )) {
@@ -71,14 +77,14 @@ module.exports = function(RED) {
             node.status({fill:"green",shape:"dot",text:"common.status.ok"});
 
             node.child.stdout.on('data', function (data) {
-                data = data.toString().trim();
-                if (data.length > 0) {
-                    if (node.running && node.buttonState !== -1) {
-                        node.send({ topic:"pi/"+node.pin, payload:Number(data) });
+                var d = data.toString().trim().split("\n");
+                for (var i = 0; i < d.length; i++) {
+                    if (node.running && node.buttonState !== -1 && !isNaN(Number(d[i]))) {
+                        node.send({ topic:"pi/"+node.pin, payload:Number(d[i]) });
                     }
-                    node.buttonState = data;
-                    node.status({fill:"green",shape:"dot",text:data});
-                    if (RED.settings.verbose) { node.log("out: "+data+" :"); }
+                    node.buttonState = d[i];
+                    node.status({fill:"green",shape:"dot",text:d[i]});
+                    if (RED.settings.verbose) { node.log("out: "+d[i]+" :"); }
                 }
             });
 
@@ -160,11 +166,12 @@ module.exports = function(RED) {
         if (node.pin !== undefined) {
             if (node.set && (node.out === "out")) {
                 node.child = spawn(gpioCommand, [node.out,node.pin,node.level]);
+                node.status({fill:"green",shape:"dot",text:node.level});
             } else {
                 node.child = spawn(gpioCommand, [node.out,node.pin]);
+                node.status({fill:"green",shape:"dot",text:"common.status.ok"});
             }
             node.running = true;
-            node.status({fill:"green",shape:"dot",text:"common.status.ok"});
 
             node.on("input", inputlistener);
 
@@ -222,8 +229,8 @@ module.exports = function(RED) {
 
         node.child.stdout.on('data', function (data) {
             data = Number(data);
-            if (data === 0) { node.send({ topic:"pi/mouse", button:data, payload:0 }); }
-            else { node.send({ topic:"pi/mouse", button:data, payload:1 }); }
+            if (data === 1) { node.send({ topic:"pi/mouse", button:data, payload:1 }); }
+            else { node.send({ topic:"pi/mouse", button:data, payload:0 }); }
         });
 
         node.child.stderr.on('data', function (data) {
